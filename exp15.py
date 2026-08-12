@@ -1,0 +1,62 @@
+import cv2
+import numpy as np
+
+# Read the image
+image = cv2.imread("image.png")
+
+if image is None:
+    print("Image not found!")
+else:
+    # Four corresponding points in the original image
+    points1 = np.float32([
+        [50, 50],
+        [300, 50],
+        [300, 300],
+        [50, 300]
+    ])
+
+    # Four corresponding points in the transformed image
+    points2 = np.float32([
+        [20, 80],
+        [320, 50],
+        [280, 320],
+        [50, 280]
+    ])
+
+    # Construct the Direct Linear Transformation (DLT) matrix
+    A = []
+
+    for i in range(4):
+        x, y = points1[i]
+        X, Y = points2[i]
+
+        A.append([-x, -y, -1, 0, 0, 0, x*X, y*X, X])
+        A.append([0, 0, 0, -x, -y, -1, x*Y, y*Y, Y])
+
+    A = np.array(A)
+
+    # Solve Ah = 0 using Singular Value Decomposition
+    U, S, Vt = np.linalg.svd(A)
+
+    # Last row of Vt gives the homography parameters
+    H = Vt[-1].reshape(3, 3)
+
+    # Normalize the Homography matrix
+    H = H / H[2, 2]
+
+    print("Homography Matrix:")
+    print(H)
+
+    # Apply DLT transformation
+    transformed = cv2.warpPerspective(
+        image,
+        H,
+        (image.shape[1], image.shape[0])
+    )
+
+    # Display images
+    cv2.imshow("Original Image", image)
+    cv2.imshow("DLT Transformed Image", transformed)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
